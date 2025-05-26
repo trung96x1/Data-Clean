@@ -1,2 +1,0 @@
-YELLOW_CODE = "faf60a"
-RED_CODE = "ff0000"

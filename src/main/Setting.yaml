@@ -1,0 +1,40 @@
+listProduct:
+  - name: Cal Stearate  # Name of product will be display in "Product" collumn
+    key:                # List of keywords to search in "Description" collumn
+      - calcium
+  - name: Zinc Stearate     
+    key:
+      - zinc
+listExcludeName:        # List of keywords to remove from company name
+  - company
+  - limited
+  - ltd
+  - tradding
+  - jsc
+  - international
+  - corp
+  - corporation
+  - joint stock company
+  - pte
+  - ooo
+
+weightUnit:            # Unit of weight
+  - name: Kilogram
+    exchange: 1
+    key:
+      - kg
+      - kilogram
+      - kilograms
+  - name: Ton
+    exchange: 1000
+    key:
+      - ton
+      - tonne
+      - tons
+      - tonnes
+  - name: Gram
+    exchange: 0.001
+    key:
+      - g
+      - gram
+      - grams

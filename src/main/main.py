@@ -6,6 +6,8 @@ from fuzzywuzzy import fuzz
 from datetime import datetime
 import os
 from Aplication import Application as App
+from Setting import Setting
+from Logger import Logger
 
 
 from Define import *
@@ -13,6 +15,8 @@ from Define import *
 table = None
 listExporter = []
 listImporter = []
+setting = None
+logger = Logger()
 
 class Table:
     def __init__(self, fileName, sheetName):
@@ -98,7 +102,9 @@ def setCountry(row, exportCountryIndex, importCountryIndex):
     return True
 
 def setProduct(row, productIndex):
+    global setting 
     global table
+
     if table == None or productIndex <= 0 or table.numrow <= 1:
         return False
     
@@ -109,43 +115,34 @@ def setProduct(row, productIndex):
         table.setCellColor(row, productIndex, RED_CODE)
         return True
     descriptionValue = descriptionValue.lower()
-    if any(keyword in descriptionValue for keyword in ["calcium"]):
-        table.setCellValue(row, productIndex, "Cal Stearate")
-        return True
-    if any(keyword in descriptionValue for keyword in ["zinc"]):
-        table.setCellValue(row, productIndex, "Zinc Stearate")
-        return True
+    listProducts = setting.get("listProduct", [])
+    for product in listProducts:  
+        if any(keyword in descriptionValue for keyword in product.get("key")):
+            table.setCellValue(row, productIndex, product.get("name"))
+            return True
     
     engTranslated = GoogleTranslator(source='auto', target='en').translate(descriptionValue)
-    print("Translated : ", engTranslated)
-    if any(keyword in engTranslated for keyword in ["calcium"]):
-        table.setCellValue(row, productIndex, "Cal Stearate")
-        return True
-    if any(keyword in engTranslated for keyword in ["zinc"]):
-        table.setCellValue(row, productIndex, "Zinc Stearate")
-        return True
+    logger.logi("Translated : {engTranslated}")
+    for product in listProducts:  
+        if any(keyword in descriptionValue for keyword in product.get("key")):
+            table.setCellValue(row, productIndex, product.get("name"))
+            return True
     table.setCellValue(row, productIndex, "N/A")
     table.setCellColor(row, productIndex, RED_CODE)
 
 def setExporter(row, exporterIndex):
-    global table, listExporter 
+    global table, listExporter, setting
     if table == None or exporterIndex <= 0 or table.numrow <= 1:
         return False
     
+    listExcludeName = setting.get("listExcludeName", [])
+    
     rawExprorterIndex = table.findColumIndex("Exporter")
     rawExporterValue = table.getCellValue(row, rawExprorterIndex)
-    rawExporterValue = rawExporterValue.strip().lower() \
-                                .replace("company", "") \
-                                .replace("limited", "") \
-                                .replace("ltd", "") \
-                                .replace("tradding", "") \
-                                .replace("jsc", "") \
-                                .replace("international", "") \
-                                .replace("corp", "") \
-                                .replace("corporation", "") \
-                                .replace("joint stock company", "") \
-                                .replace("pte", "") \
-                                .replace("ooo", "")
+    rawExporterValue = rawExporterValue.strip().lower()
+    for item in listExcludeName:
+        rawExporterValue = rawExporterValue.replace(item, "")
+
     for company in listExporter:
         if fuzz.ratio(company, rawExporterValue) >= 80:
             table.setCellValue(row, exporterIndex, company)
@@ -154,24 +151,18 @@ def setExporter(row, exporterIndex):
     table.setCellValue(row, exporterIndex, rawExporterValue)
 
 def setImporter(row, importerIndex):
-    global table, listImporter 
+    global table, listImporter, setting
     if table == None or importerIndex <= 0 or table.numrow <= 1:
         return False
     
+    listExcludeName = setting.get("listExcludeName", [])
+    
     rawImporterIndex = table.findColumIndex("Importer")
     rawImporterValue = table.getCellValue(row, rawImporterIndex)
-    rawImporterValue = rawImporterValue.strip().lower() \
-                                .replace("company", "") \
-                                .replace("limited", "") \
-                                .replace("ltd", "") \
-                                .replace("tradding", "") \
-                                .replace("jsc", "") \
-                                .replace("international", "") \
-                                .replace("corp", "") \
-                                .replace("corporation", "") \
-                                .replace("joint stock company", "") \
-                                .replace("pte", "") \
-                                .replace("ooo", "")
+    rawImporterValue = rawImporterValue.strip().lower()
+    for item in listExcludeName:
+        rawImporterValue = rawImporterValue.replace(item, "")
+
     for company in listImporter:
         if fuzz.ratio(company, rawImporterValue) >= 70:
             table.setCellValue(row, importerIndex, company)
@@ -180,7 +171,7 @@ def setImporter(row, importerIndex):
     table.setCellValue(row, importerIndex, rawImporterValue)
 
 def setUnitPrice(row, unitPriceIndex, quantityIndex):
-    global table
+    global table, setting
     if table == None or unitPriceIndex <= 0 or quantityIndex <= 0 or table.numrow <= 1:
         return False
     
@@ -188,22 +179,36 @@ def setUnitPrice(row, unitPriceIndex, quantityIndex):
     rawQuantityValue  = table.getCellValue(row, rawQuantityIndex)
 
     rawQuantityUnitIndex = table.findColumIndex("Quantity Unit")
-    rawQuantityUnitValue  = table.getCellValue(row, rawQuantityUnitIndex)
+    rawQuantityUnitValue  = table.getCellValue(row, rawQuantityUnitIndex).strip().lower()
 
     rawValueIndex = table.findColumIndex("Value(USD)")
     rawValueValue  = table.getCellValue(row, rawValueIndex)
 
+    if not isinstance(rawQuantityValue, (int, float)) or not isinstance(rawValueValue, (int, float)):
+        table.setCellValue(row, unitPriceIndex, "N/A")
+        table.setCellColor(row, unitPriceIndex, RED_CODE)
+        table.setCellValue(row, quantityIndex, "N/A")
+        table.setCellColor(row, quantityIndex, RED_CODE)
+        return False
+
     quantity = 0
     if rawQuantityUnitValue == None or rawQuantityUnitValue == "":
         quantity = -1
-    elif rawQuantityUnitValue == "Kilograms":
-        quantity = rawQuantityValue
-    elif rawQuantityUnitValue == "Gram":
-        quantity = rawQuantityValue / 1000
-    elif rawQuantityUnitValue == "Ton":
-        quantity = rawQuantityValue * 1000
-    else :
-        quantity = -1
+    else:
+        weightUnit = setting.get("weightUnit", [])
+        isValid = False
+        for unit in weightUnit:
+            unitExchange = unit.get("exchange")
+            unitKeys = unit.get("key")
+            for key in unitKeys:
+                if rawQuantityUnitValue == key:
+                    quantity = rawQuantityValue * unitExchange
+                    isValid = True
+                    break
+            if isValid:
+                break
+        if not isValid:
+            quantity = -1
 
     # Set the quantity
     if quantity == -1:
@@ -231,15 +236,16 @@ def setTime(row, monthIndex, yearIndex):
     table.setCellValue(row, monthIndex, date_obj.month)
     table.setCellValue(row, yearIndex, date_obj.year)
 
-class Test:
+class Scenario:
     def __init__(self):
         pass 
-    def execute(self, file_path):
+    def execute(self, file_path, app):
         global table
+        startTime = datetime.now()
         if file_path:
             table = Table(file_path, "Sheet1")
         else:
-            table = Table("Test.xlsx", "Sheet1")
+            table = Table(TEST_FILE, "Sheet1")
         exportCountryIndex = table.addColumnToEnd("Export Country")
         table.fillColumColor(exportCountryIndex, YELLOW_CODE)  # Yellow
 
@@ -268,7 +274,8 @@ class Test:
         table.fillColumColor(yearIndex, YELLOW_CODE)  # Yellow
 
         for row in range(2, table.numrow + 1):
-            print(f"Processing {row}/{table.numrow}")
+            logger.logi(f"Processing {row}/{table.numrow}")
+            app.setProgress(row, table.numrow)
             #1 Set the country
             setCountry(row, exportCountryIndex, importCountryIndex)
 
@@ -286,13 +293,28 @@ class Test:
 
             #6 Set the time
             setTime(row, monthIndex, yearIndex)
+  
+        dataFoler = os.path.join(os.path.dirname(__file__), "./Data/")
+        if not os.path.exists(dataFoler):
+            os.makedirs(dataFoler)
+        fileName = os.path.basename(file_path) if file_path else TEST_FILE
+        filePath = os.path.join(dataFoler, f"{fileName.split('.')[0]}_result.xlsx")
 
-        table.save("Data modified.xlsx")
-        os.startfile("Data modified.xlsx")
+        table.save(filePath)
+        os.startfile(filePath)
+        
+        endTime = datetime.now()
+        executionTime = (endTime - startTime)
+        app.setExecuteTime(executionTime)
+        logger.logi(f"Execution completed in {executionTime}")
+
         
 def main():
-    test = Test()
-    app = App(test)
+    global setting
+    setting = Setting(SETTING_FILE_PATH)
+
+    scenario = Scenario()
+    app = App(scenario)
     app.run()
 
 if __name__ == "__main__":
