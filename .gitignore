@@ -1,0 +1,15 @@
+__pycache__/
+*.pyc
+
+myenv/
+env/
+Data/
+src/main/Data/
+src/main/Log/
+
+.vscode/
+.idea/
+
+*.log
+*.tmp
+*.xlsx
