@@ -1,3 +1,4 @@
+# Build exe file : pyinstaller --onefile --noconsole .\main_selenium.py
 from openpyxl import load_workbook
 from openpyxl.styles import PatternFill
 from openpyxl.utils import get_column_letter
@@ -72,31 +73,31 @@ def setCountry(row, exportCountryIndex, importCountryIndex):
     if table == None or exportCountryIndex <= 0 or importCountryIndex <= 0 or table.numrow <= 1:
         return False
     
-    datasetIndex = table.findColumIndex("Dataset")
+    datasetIndex = table.findColumIndex(DATASET_COLUMN)
     dataValue = table.getCellValue(row, datasetIndex)
     if "Export" in dataValue: 
         table.setCellValue(row, exportCountryIndex, dataValue.split("(Export)")[0].strip())
 
-        destCountryIndex = table.findColumIndex("Destination Country")
+        destCountryIndex = table.findColumIndex(DESTINATION_COUNTRY_COLUMN)
         destCountry = table.getCellValue(row, destCountryIndex)
         if destCountry == None or destCountry == "":
-            table.setCellValue(row, importCountryIndex, "N/A")
+            table.setCellValue(row, importCountryIndex, NA)
             table.setCellColor(row, importCountryIndex, RED_CODE)
         else :
             table.setCellValue(row, importCountryIndex, destCountry)
     elif "Import" in dataValue: 
         table.setCellValue(row, importCountryIndex, dataValue.split("(Import)")[0].strip())
 
-        originCountryIndex = table.findColumIndex("Origin Country")
+        originCountryIndex = table.findColumIndex(ORIGIN_COUNTRY_COLUMN)
         originCountry = table.getCellValue(row, originCountryIndex)
         if originCountry == None or originCountry == "":
-            table.setCellValue(row, exportCountryIndex, "N/A")
+            table.setCellValue(row, exportCountryIndex, NA)
             table.setCellColor(row, exportCountryIndex, RED_CODE)
         else :
             table.setCellValue(row, exportCountryIndex, originCountry)
     else :
-        table.setCellValue(row, importCountryIndex, "N/A")
-        table.setCellValue(row, exportCountryIndex, "N/A")
+        table.setCellValue(row, importCountryIndex, NA)
+        table.setCellValue(row, exportCountryIndex, NA)
         table.setCellColor(row, exportCountryIndex, RED_CODE)
         table.setCellColor(row, importCountryIndex, RED_CODE)
     return True
@@ -108,10 +109,10 @@ def setProduct(row, productIndex):
     if table == None or productIndex <= 0 or table.numrow <= 1:
         return False
     
-    descriptionIndex = table.findColumIndex("Description")
+    descriptionIndex = table.findColumIndex(DESCRIPTION_COLUMN)
     descriptionValue = table.getCellValue(row, descriptionIndex)
     if descriptionValue == None or descriptionValue == "":
-        table.setCellValue(row, productIndex, "N/A")
+        table.setCellValue(row, productIndex, NA)
         table.setCellColor(row, productIndex, RED_CODE)
         return True
     descriptionValue = descriptionValue.lower()
@@ -122,12 +123,12 @@ def setProduct(row, productIndex):
             return True
     
     engTranslated = GoogleTranslator(source='auto', target='en').translate(descriptionValue)
-    logger.logi("Translated : {engTranslated}")
+    logger.logi(f"Translated : {engTranslated}")
     for product in listProducts:  
         if any(keyword in descriptionValue for keyword in product.get("key")):
             table.setCellValue(row, productIndex, product.get("name"))
             return True
-    table.setCellValue(row, productIndex, "N/A")
+    table.setCellValue(row, productIndex, NA)
     table.setCellColor(row, productIndex, RED_CODE)
 
 def setExporter(row, exporterIndex):
@@ -137,7 +138,7 @@ def setExporter(row, exporterIndex):
     
     listExcludeName = setting.get("listExcludeName", [])
     
-    rawExprorterIndex = table.findColumIndex("Exporter")
+    rawExprorterIndex = table.findColumIndex(EXPORTER_COLUMN)
     rawExporterValue = table.getCellValue(row, rawExprorterIndex)
     rawExporterValue = rawExporterValue.strip().lower()
     for item in listExcludeName:
@@ -157,7 +158,7 @@ def setImporter(row, importerIndex):
     
     listExcludeName = setting.get("listExcludeName", [])
     
-    rawImporterIndex = table.findColumIndex("Importer")
+    rawImporterIndex = table.findColumIndex(IMPORTER_COLUMN)
     rawImporterValue = table.getCellValue(row, rawImporterIndex)
     rawImporterValue = rawImporterValue.strip().lower()
     for item in listExcludeName:
@@ -175,19 +176,19 @@ def setUnitPrice(row, unitPriceIndex, quantityIndex):
     if table == None or unitPriceIndex <= 0 or quantityIndex <= 0 or table.numrow <= 1:
         return False
     
-    rawQuantityIndex = table.findColumIndex("Quantity")
+    rawQuantityIndex = table.findColumIndex(QUANTITY_COLUMN)
     rawQuantityValue  = table.getCellValue(row, rawQuantityIndex)
 
-    rawQuantityUnitIndex = table.findColumIndex("Quantity Unit")
+    rawQuantityUnitIndex = table.findColumIndex(QUANTITY_UNIT_COLUMN)
     rawQuantityUnitValue  = table.getCellValue(row, rawQuantityUnitIndex).strip().lower()
 
-    rawValueIndex = table.findColumIndex("Value(USD)")
+    rawValueIndex = table.findColumIndex(VALUE_COLUMN)
     rawValueValue  = table.getCellValue(row, rawValueIndex)
 
     if not isinstance(rawQuantityValue, (int, float)) or not isinstance(rawValueValue, (int, float)):
-        table.setCellValue(row, unitPriceIndex, "N/A")
+        table.setCellValue(row, unitPriceIndex, NA)
         table.setCellColor(row, unitPriceIndex, RED_CODE)
-        table.setCellValue(row, quantityIndex, "N/A")
+        table.setCellValue(row, quantityIndex, NA)
         table.setCellColor(row, quantityIndex, RED_CODE)
         return False
 
@@ -212,14 +213,14 @@ def setUnitPrice(row, unitPriceIndex, quantityIndex):
 
     # Set the quantity
     if quantity == -1:
-        table.setCellValue(row, quantityIndex, "N/A")
+        table.setCellValue(row, quantityIndex, NA)
         table.setCellColor(row, quantityIndex, RED_CODE)
     else :
         table.setCellValue(row, quantityIndex, quantity)
 
     # Set the unit price
     if rawValueValue == None or rawValueValue == "" or quantity == -1:
-        table.setCellValue(row, unitPriceIndex, "N/A")
+        table.setCellValue(row, unitPriceIndex, NA)
         table.setCellColor(row, unitPriceIndex, RED_CODE)
     else :
         table.setCellValue(row, unitPriceIndex, round(rawValueValue / quantity, 2))
@@ -229,7 +230,7 @@ def setTime(row, monthIndex, yearIndex):
     if table == None or monthIndex <= 0 or yearIndex <= 0 or table.numrow <= 1:
         return False
     
-    rawDateIndex = table.findColumIndex("Date")
+    rawDateIndex = table.findColumIndex(DATE_COLUMN)
     rawDateValue = table.getCellValue(row, rawDateIndex)
 
     date_obj = datetime.strptime(rawDateValue, "%Y-%m-%d")
@@ -243,34 +244,34 @@ class Scenario:
         global table
         startTime = datetime.now()
         if file_path:
-            table = Table(file_path, "Sheet1")
+            table = Table(file_path, SHEET_NAME)
         else:
-            table = Table(TEST_FILE, "Sheet1")
-        exportCountryIndex = table.addColumnToEnd("Export Country")
+            table = Table(TEST_FILE, SHEET_NAME)
+        exportCountryIndex = table.addColumnToEnd(EXPORT_COUNTRY_COLUMN)
         table.fillColumColor(exportCountryIndex, YELLOW_CODE)  # Yellow
 
-        importCountryIndex = table.addColumnToEnd("Import Country")
+        importCountryIndex = table.addColumnToEnd(IMPORT_COUNTRY_COLUMN)
         table.fillColumColor(importCountryIndex, YELLOW_CODE)  # Yellow
 
-        productIndex = table.addColumnToEnd("Product")
+        productIndex = table.addColumnToEnd(PRODUCT_COLUMN)
         table.fillColumColor(productIndex, YELLOW_CODE)  # Yellow
 
-        exportIndex = table.addColumnToEnd("Exporter")
+        exportIndex = table.addColumnToEnd(EXPORTER2_COLUMN)
         table.fillColumColor(exportIndex, YELLOW_CODE)  # Yellow
 
-        importIdex = table.addColumnToEnd("Importer")
+        importIdex = table.addColumnToEnd(IMPORTER2_COLUMN)
         table.fillColumColor(importIdex, YELLOW_CODE)  # Yellow
 
-        unitPriceIndex = table.addColumnToEnd("Unit Price")
+        unitPriceIndex = table.addColumnToEnd(UNIT_PRICE_COLUMN)
         table.fillColumColor(unitPriceIndex, YELLOW_CODE)  # Yellow
 
-        quantityIndex = table.addColumnToEnd("Quantity KG")
+        quantityIndex = table.addColumnToEnd(QUANTITY_KG_COLUMN)
         table.fillColumColor(quantityIndex, YELLOW_CODE)  # Yellow
 
-        monthIndex = table.addColumnToEnd("Month")
+        monthIndex = table.addColumnToEnd(MONTH_COLUMN)
         table.fillColumColor(monthIndex, YELLOW_CODE)  # Yellow
 
-        yearIndex = table.addColumnToEnd("Year")
+        yearIndex = table.addColumnToEnd(YEAR_COLUMN)
         table.fillColumColor(yearIndex, YELLOW_CODE)  # Yellow
 
         for row in range(2, table.numrow + 1):
@@ -294,7 +295,8 @@ class Scenario:
             #6 Set the time
             setTime(row, monthIndex, yearIndex)
   
-        dataFoler = os.path.join(os.path.dirname(__file__), "./Data/")
+        
+        dataFoler = os.path.join(os.getcwd(), "Data")
         if not os.path.exists(dataFoler):
             os.makedirs(dataFoler)
         fileName = os.path.basename(file_path) if file_path else TEST_FILE

@@ -4,24 +4,25 @@ from tkinter import filedialog
 from tkinter import messagebox
 import threading
 from Logger import Logger
+from Define import *
 
 class Application:
     def __init__(self, scenario):
         self.root = tk.Tk()
-        self.root.title("Data Standard")
-        self.root.geometry("400x150")
+        self.root.title(APP_NAME)
+        self.root.geometry(APP_SIZE)
 
-        self.button = tk.Button(self.root, text="Select File", command = self.select_file)
-        self.button.pack(pady=5)
+        self.button = tk.Button(self.root, text=BUTTON_TEXT, command = self.select_file)
+        self.button.pack(pady=PADDING)
 
         self.labelProgress = tk.Label(self.root, text="")
-        self.labelProgress.pack(pady=5)
+        self.labelProgress.pack(pady=PADDING)
 
-        self.progress = ttk.Progressbar(self.root, orient='horizontal', length=200, mode='determinate')
-        self.progress.pack(pady=5)
+        self.progress = ttk.Progressbar(self.root, orient='horizontal', length=PROGRESSBAR_LENGTH, mode='determinate')
+        self.progress.pack(pady=PADDING)
 
         self.labelTime = tk.Label(self.root, text="")
-        self.labelTime.pack(pady=5)
+        self.labelTime.pack(pady=PADDING)
 
         self.scenario = scenario
    

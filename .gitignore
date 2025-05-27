@@ -6,6 +6,8 @@ env/
 Data/
 src/main/Data/
 src/main/Log/
+src/main/build/
+src/main/dist/
 
 .vscode/
 .idea/
@@ -13,3 +15,4 @@ src/main/Log/
 *.log
 *.tmp
 *.xlsx
+*.spec
