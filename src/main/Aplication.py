@@ -1,3 +1,4 @@
+from enum import Enum
 import tkinter as tk
 from tkinter import ttk
 from tkinter import filedialog
@@ -7,6 +8,11 @@ from Logger import Logger
 from Define import *
 
 class Application:
+    class MesageType(Enum):
+        ERROR = 1
+        WARNING = 2
+        INFO = 3
+
     def __init__(self, scenario):
         self.root = tk.Tk()
         self.root.title(APP_NAME)
@@ -44,6 +50,14 @@ class Application:
 
     def setExecuteTime(self, time):
         self.labelTime.config(text=f"Execution Time: {str(time).split('.')[0]}")
+
+    def showMessagebox(self, messageType,  title, message):
+        if messageType == self.MesageType.INFO:
+            messagebox.showinfo(title, message)
+        elif messageType == self.MesageType.WARNING:
+            messagebox.showwarning(title, message)
+        elif messageType == self.MesageType.ERROR:
+            messagebox.showerror(title, message)
         
     def run(self):
         self.root.mainloop()

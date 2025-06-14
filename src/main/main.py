@@ -1,4 +1,4 @@
-# Build exe file : pyinstaller --onefile --noconsole .\main_selenium.py
+# Build exe file : pyinstaller --onefile --noconsole .\main.py
 from openpyxl import load_workbook
 from openpyxl.styles import PatternFill
 from openpyxl.utils import get_column_letter
@@ -151,12 +151,13 @@ def setProduct(row, productIndex):
             table.setCellValue(row, productIndex, product.get("name"))
             return True
     
-    engTranslated = GoogleTranslator(source='auto', target='en').translate(descriptionValue)
-    logger.logi(f"Translated : {engTranslated}")
-    for product in listProducts:  
-        if any(keyword in descriptionValue for keyword in product.get("key")):
-            table.setCellValue(row, productIndex, product.get("name"))
-            return True
+    if setting.get("isTranslteEnable", False):
+        engTranslated = GoogleTranslator(source='auto', target='en').translate(descriptionValue)
+        logger.logi(f"Translated : {engTranslated}")
+        for product in listProducts:  
+            if any(keyword in descriptionValue for keyword in product.get("key")):
+                table.setCellValue(row, productIndex, product.get("name"))
+                return True
 
     logger.loge(f"setProduct : Can't find product for row {row}")
     table.setInvalidCell(row, productIndex)
@@ -385,10 +386,21 @@ class Scenario:
     def execute(self, file_path, app):
         global table
         startTime = datetime.now()
-        if file_path:
-            table = Table(file_path, SHEET_NAME)
-        else:
-            table = Table(TEST_FILE, SHEET_NAME)
+        try:
+            if file_path:
+                table = Table(file_path, SHEET_NAME)
+            else:
+                table = Table(TEST_FILE, SHEET_NAME)
+        except Exception as e:
+            logger.loge(f"Error loading file: {e}")
+            app.showMessagebox(App.MesageType.ERROR, "Error", f"Error loading file, it seem file broken or not exist")
+            return
+
+        if table.getCellValue(1, 1) != DATASET_COLUMN:
+            logger.loge(f"Invalid file format, first cell should be {DATASET_COLUMN}")
+            app.showMessagebox(App.MesageType.ERROR, "Error", f"Invalid file format, first cell should be {DATASET_COLUMN}")
+            return
+
         exportCountryIndex = table.addColumnToEnd(EXPORT_COUNTRY_COLUMN)
         table.fillColumColor(exportCountryIndex, YELLOW_CODE)  # Yellow
 

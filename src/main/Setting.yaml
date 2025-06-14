@@ -38,3 +38,5 @@ weightUnit:            # Unit of weight
       - g
       - gram
       - grams
+
+isTranslteEnable: true  # Enable or disable translation (true/false)
